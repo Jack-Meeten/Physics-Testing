@@ -670,7 +670,7 @@ MonoBehaviour:
   wheelRadius: 0.365
   steerAngle: 0
   steerTime: 8
-  wheelForce: 1000
+  wheelForce: 1500
   breakingForce: 1500
   rollingResistanceCoef:
     serializedVersion: 2
@@ -7462,7 +7462,7 @@ MonoBehaviour:
   wheelRadius: 0.365
   steerAngle: 0
   steerTime: 8
-  wheelForce: 1000
+  wheelForce: 1500
   breakingForce: 1500
   rollingResistanceCoef:
     serializedVersion: 2
