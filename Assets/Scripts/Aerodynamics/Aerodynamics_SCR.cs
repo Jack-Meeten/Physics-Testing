@@ -14,9 +14,9 @@ public class Aerodynamics_SCR : MonoBehaviour
     float lastDistanceMoved;
     float acceleration;
 
-    Vector3[] verts;
-    int[] indicies;
-    Vector3[] normals;
+    public Vector3[] verts;
+    public int[] indicies;
+    public Vector3[] normals;
     public List<Vector3> center = new List<Vector3>();
     public List<Vector3> faceNormals = new List<Vector3>();
     public List<float> areas = new List<float>();
@@ -46,6 +46,7 @@ public class Aerodynamics_SCR : MonoBehaviour
             Vector3 P1 = verts[indicies[i++]];
             Vector3 P2 = verts[indicies[i++]];
             Vector3 P3 = verts[indicies[i++]];
+            //Debug.Log(i);
             areas.Add(CalculateAreaOfTrinagle(P1, P2, P3));
 
             center.Add((P1 + P2 + P3) / 3);
@@ -62,12 +63,14 @@ public class Aerodynamics_SCR : MonoBehaviour
 
     private void FixedUpdate()
     {
+        //Debug.Log(AccelerationCalculation());
+
         Vector3 applyPos;
         Vector3 drag;
 
 
         drag = -rB.velocity * Drag(out applyPos);
-        //rB.AddForceAtPosition(drag, applyPos);
+        rB.AddForceAtPosition(drag, applyPos);
     }
 
     float Drag(out Vector3 applyPos)
@@ -78,9 +81,10 @@ public class Aerodynamics_SCR : MonoBehaviour
 
         for (int i = 0; i < faceNormals.Count; i++)
         {
-            float angleFromNormal = Vector3.Angle(rB.velocity.normalized, faceNormals[i]);
+            Debug.DrawRay(transform.TransformPoint(center[i]), faceNormals[i], Color.blue);
 
-            Debug.Log(angleFromNormal + "   " + i);
+            float angleFromNormal = (transform.InverseTransformDirection(rB.velocity) - faceNormals[i]).magnitude;
+            Debug.Log(angleFromNormal + "  " + i);
 
             if (angleFromNormal < 90)
             {
@@ -89,6 +93,7 @@ public class Aerodynamics_SCR : MonoBehaviour
                 exposedSA += areas[i] * pecentage;
                 averagePos += center[i];
                 pointCount++;
+                //Debug.Log("Area = " + exposedSA);
             }
         }
 
@@ -98,6 +103,7 @@ public class Aerodynamics_SCR : MonoBehaviour
             * exposedSA;
 
         applyPos = averagePos / pointCount;
+
         return drag;
     }
 
