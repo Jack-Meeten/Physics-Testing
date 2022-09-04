@@ -10,6 +10,8 @@ public class Aero_SCR : MonoBehaviour
     public float temp = 288.15f;
 
     [Header("Wing Info")]
+    public bool dragOnly;
+    [Header("         ")]
     public WingCurves wingCurves;
     public Transform COM;
     public bool drawWings;
@@ -20,6 +22,7 @@ public class Aero_SCR : MonoBehaviour
     public float tip;
     public float span;
     public float sweep;
+    public Vector3 offset;
 
     Vector3 pointX;
     Vector3 pointY;
@@ -27,6 +30,7 @@ public class Aero_SCR : MonoBehaviour
     Vector3 pointB;
     Rigidbody rb;
     float AOA;
+    Vector3 debugLift;
 
     [Header("Constants")]
     float g = 9.80665f;
@@ -37,6 +41,10 @@ public class Aero_SCR : MonoBehaviour
     [HideInInspector] public bool mirror;
 
     [HideInInspector] public float area;
+
+    [HideInInspector] public float _lift;
+
+    [HideInInspector] public float _drag;
 
     private void Start()
     {
@@ -54,20 +62,39 @@ public class Aero_SCR : MonoBehaviour
         }
 #endif
         area = CalculateArea(root, tip, span);
+
+        Debug.DrawRay(COM.position, transform.InverseTransformDirection(rb.GetPointVelocity(transform.position)) / 50, Color.red);
+        Debug.DrawRay(COM.position, transform.right, Color.green);
+        Debug.DrawRay(COM.position, -rb.velocity.normalized * Drag() / 250, Color.yellow);
+        Debug.DrawRay(COM.position, debugLift / 700, Color.blue);
     }
 
     private void FixedUpdate()
     {
-        Vector3 lift = Vector3.zero;
-        //lift = rb.velocity.normalized * Lift();
-        lift = -Vector3.Cross(rb.velocity.normalized, transform.InverseTransformDirection(transform.forward)) * Lift();
-        Debug.DrawRay(COM.position, lift / 100, Color.blue);
-        Debug.DrawRay(COM.position, rb.velocity.normalized, Color.red);
-        Debug.DrawRay(COM.position, transform.InverseTransformDirection(transform.right), Color.green);
+        if (!dragOnly)
+        {
+            Vector3 lift = Vector3.zero;
+            lift = -Vector3.Cross(rb.velocity, transform.forward).normalized * Lift();
+
+            _lift = lift.magnitude;
+            debugLift = lift;
+
+            rb.AddForceAtPosition(lift / 1000, COM.position);
+        }
 
 
-        rb.AddForceAtPosition(lift / 1000, COM.position);
-        Debug.Log("Lift : " + lift);
+        Vector3 drag = -rb.velocity.normalized * Drag();
+
+        _drag = drag.magnitude;
+
+        Debug.Log(-rb.velocity.normalized); 
+
+
+        rb.AddForceAtPosition(drag / 1000, COM.position);
+
+        //Debug.Log("Lift : " + lift);
+        //Debug.Log("Raw Lift : " + Lift());
+        //Debug.Log(-Vector3.Cross(rb.velocity.normalized, transform.InverseTransformDirection(transform.forward)));
     }
 
     float Lift()
@@ -85,12 +112,26 @@ public class Aero_SCR : MonoBehaviour
             * area);
     }
 
+    float Drag()
+    {
+        Vector3 localVel = transform.InverseTransformDirection(rb.GetPointVelocity(transform.position));
+        localVel.z = 0;
+        float aoa = GetAOA(localVel);
+
+        float dragArea = ((Vector3.Angle(rb.velocity.normalized, transform.up) / 90)) * area;
+        //dragArea = ((1 - dragArea) * area);
+        if (dragArea < 0)
+        {
+            dragArea = Mathf.Abs(dragArea);
+        }
+
+        return wingCurves.GetDragAtAOA(aoa) * ((AirDensityCalc(transform.position.y, temp) * Mathf.Pow(rb.velocity.magnitude, 2)) / 2) * dragArea;
+    }
+
     float GetAOA(Vector3 worldVelocity)
     {
-        float aoa;
-
         //aoa = Vector3.SignedAngle(forwardDir, velocityVehicleSpace, rightDir);
-        aoa = Vector3.Angle(Vector3.right, transform.InverseTransformDirection(worldVelocity));
+        float aoa = Vector3.Angle(Vector3.right, worldVelocity);
         AOA = aoa;
         return aoa;
     }
@@ -118,24 +159,24 @@ public class Aero_SCR : MonoBehaviour
     {
         if (mirror)
         {
-            pointX = new Vector3(transform.position.x + root / 2, transform.position.y, transform.position.z);
-            pointY = new Vector3(transform.position.x - root / 2, transform.position.y, transform.position.z);
-            pointA = new Vector3((transform.position.x + tip / 2) + sweep, transform.position.y, transform.position.z + span);
-            pointB = new Vector3((transform.position.x - tip / 2) + sweep, transform.position.y, transform.position.z + span);
+            pointX = new Vector3((transform.position.x + root / 2) + offset.x, transform.position.y + offset.y, transform.position.z + offset.z);
+            pointY = new Vector3((transform.position.x - root / 2) + offset.x, transform.position.y + offset.y, transform.position.z + offset.z);
+            pointA = new Vector3((transform.position.x + tip / 2) + sweep + offset.x, transform.position.y + offset.y, transform.position.z + span + offset.z);
+            pointB = new Vector3((transform.position.x - tip / 2) + sweep + offset.x, transform.position.y + offset.y, transform.position.z + span + offset.z);
         }
         else if (tail)
         {
-            pointX = new Vector3(transform.position.x + root / 2, transform.position.y, transform.position.z);
-            pointY = new Vector3(transform.position.x - root / 2, transform.position.y, transform.position.z);
-            pointA = new Vector3((transform.position.x + tip / 2) + sweep, transform.position.y + span, transform.position.z);
-            pointB = new Vector3((transform.position.x - tip / 2) + sweep, transform.position.y + span, transform.position.z);
+            pointX = new Vector3((transform.position.x + root / 2) + offset.x, transform.position.y + offset.y, transform.position.z + offset.z);
+            pointY = new Vector3((transform.position.x - root / 2) + offset.x, transform.position.y + offset.y, transform.position.z + offset.z);
+            pointA = new Vector3((transform.position.x + tip / 2) + sweep + offset.x, transform.position.y + span + offset.y, transform.position.z + offset.z);
+            pointB = new Vector3((transform.position.x - tip / 2) + sweep + offset.x, transform.position.y + span + offset.y, transform.position.z + offset.z);
         }
         else
         {
-            pointX = new Vector3(transform.position.x + root / 2, transform.position.y, transform.position.z);
-            pointY = new Vector3(transform.position.x - root / 2, transform.position.y, transform.position.z);
-            pointA = new Vector3((transform.position.x + tip / 2) + sweep, transform.position.y, transform.position.z - span);
-            pointB = new Vector3((transform.position.x - tip / 2) + sweep, transform.position.y, transform.position.z - span);
+            pointX = new Vector3((transform.position.x + root / 2) + offset.x, transform.position.y + offset.y, transform.position.z + offset.z);
+            pointY = new Vector3((transform.position.x - root / 2) + offset.x, transform.position.y + offset.y, transform.position.z + offset.z);
+            pointA = new Vector3((transform.position.x + tip / 2) + sweep + offset.x, transform.position.y + offset.y, transform.position.z - span + offset.z);
+            pointB = new Vector3((transform.position.x - tip / 2) + sweep + offset.x, transform.position.y + offset.y, transform.position.z - span + offset.z);
         }
 
         Debug.DrawLine(pointX, pointY);

@@ -23,7 +23,8 @@ public class CustomEditor : Editor
         }
         EditorGUILayout.LabelField("Area:", (aero.area.ToString() + " M^2"));
         EditorGUILayout.LabelField("Flipped:", (aero.mirror.ToString()));
-
+        EditorGUILayout.LabelField("Lift:", (aero._lift.ToString()));
+        EditorGUILayout.LabelField("Drag:", (aero._drag.ToString()));
     }
 }
 #endif
