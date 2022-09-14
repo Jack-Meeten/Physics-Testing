@@ -33,18 +33,9 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Throttle Up",
+                    "name": "Throttle",
                     "type": "Button",
                     "id": "b477d95c-64d5-453c-8953-b18421f94582",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "Throttle Down",
-                    "type": "Button",
-                    "id": "27161483-43bd-4300-a0c2-5c4c37422ed2",
                     "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
@@ -152,26 +143,37 @@
                     "isPartOfComposite": true
                 },
                 {
-                    "name": "",
-                    "id": "ba629a5f-8694-48e8-9f65-5b67191bcd3c",
+                    "name": "1D Axis",
+                    "id": "fe067323-273d-4573-b02b-4ca2fb7ebd24",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Throttle",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "negative",
+                    "id": "a07a612e-ba7e-44a9-96e6-63551d486867",
                     "path": "<Keyboard>/leftShift",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Throttle Up",
+                    "action": "Throttle",
                     "isComposite": false,
-                    "isPartOfComposite": false
+                    "isPartOfComposite": true
                 },
                 {
-                    "name": "",
-                    "id": "586e22f8-e1cd-4d16-ab89-2f3f7e63e8ca",
+                    "name": "positive",
+                    "id": "2bd49903-e1bb-4a4d-97bb-282614d6a059",
                     "path": "<Keyboard>/leftCtrl",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "Throttle Down",
+                    "action": "Throttle",
                     "isComposite": false,
-                    "isPartOfComposite": false
+                    "isPartOfComposite": true
                 }
             ]
         },

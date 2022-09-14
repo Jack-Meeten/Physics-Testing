@@ -24,6 +24,13 @@ public class Aero_SCR : MonoBehaviour
     public float sweep;
     public Vector3 offset;
 
+    [Header(" ")]
+    public bool isControlSurface;
+    public bool pitch, yaw, roll;
+    [Range(-5, 5)] public float trimPosition;
+    public float minTrim = -2;
+    public float maxTrim = 2;
+
     Vector3 pointX;
     Vector3 pointY;
     Vector3 pointA;
@@ -45,6 +52,8 @@ public class Aero_SCR : MonoBehaviour
     [HideInInspector] public float _lift;
 
     [HideInInspector] public float _drag;
+
+    [HideInInspector] public float inputVal;
 
     private void Start()
     {
@@ -82,19 +91,34 @@ public class Aero_SCR : MonoBehaviour
             rb.AddForceAtPosition(lift / 1000, COM.position);
         }
 
-
         Vector3 drag = -rb.velocity.normalized * Drag();
 
         _drag = drag.magnitude;
 
-        Debug.Log(-rb.velocity.normalized); 
-
-
         rb.AddForceAtPosition(drag / 1000, COM.position);
 
-        //Debug.Log("Lift : " + lift);
-        //Debug.Log("Raw Lift : " + Lift());
-        //Debug.Log(-Vector3.Cross(rb.velocity.normalized, transform.InverseTransformDirection(transform.forward)));
+        if (isControlSurface)
+        {
+            Vector3 rot = Vector3.zero;
+            rot = transform.localEulerAngles;
+
+            float currentDeflection;
+
+            if (inputVal < 0)
+            {
+                currentDeflection = (inputVal * maxTrim) + trimPosition;
+
+            }
+            else
+            {
+                currentDeflection = (-inputVal * minTrim) + trimPosition;
+
+            }
+
+            rot.z = currentDeflection;
+
+            transform.localEulerAngles = rot;
+        }
     }
 
     float Lift()
@@ -119,7 +143,9 @@ public class Aero_SCR : MonoBehaviour
         float aoa = GetAOA(localVel);
 
         float dragArea = ((Vector3.Angle(rb.velocity.normalized, transform.up) / 90)) * area;
+
         //dragArea = ((1 - dragArea) * area);
+
         if (dragArea < 0)
         {
             dragArea = Mathf.Abs(dragArea);
@@ -139,6 +165,7 @@ public class Aero_SCR : MonoBehaviour
     public void Calculate()
     {
         area = CalculateArea(root, tip, span);
+        transform.root.GetComponent<Plane_CNTR>().surfacs.Add(this);
     }
 
     public float CalculateArea(float a, float b, float h)
