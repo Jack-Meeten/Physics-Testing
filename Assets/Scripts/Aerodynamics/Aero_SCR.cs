@@ -7,10 +7,10 @@ using UnityEditor;
 public class Aero_SCR : MonoBehaviour
 {
     [Header("World Info")]
-    public float temp = 288.15f;
+    float temp = 288.15f;
 
     [Header("Wing Info")]
-    public bool dragOnly;
+    public bool dragOnly, liftOnly;
     [Header("         ")]
     public WingCurves wingCurves;
     public Transform COM;
@@ -30,6 +30,11 @@ public class Aero_SCR : MonoBehaviour
     [Range(-5, 5)] public float trimPosition;
     public float minTrim = -2;
     public float maxTrim = 2;
+    [Header(" ")]
+    public float moveSpeed = 90f;
+    public float senseFreshHold = 10f;
+    [Header(" ")]
+    public float maxTorque = 6000;
 
     Vector3 pointX;
     Vector3 pointY;
@@ -72,7 +77,7 @@ public class Aero_SCR : MonoBehaviour
 #endif
         area = CalculateArea(root, tip, span);
 
-        Debug.DrawRay(COM.position, transform.InverseTransformDirection(rb.GetPointVelocity(transform.position)) / 50, Color.red);
+        Debug.DrawRay(COM.position, rb.GetPointVelocity(transform.position) / 50, Color.red);
         Debug.DrawRay(COM.position, transform.right, Color.green);
         Debug.DrawRay(COM.position, -rb.velocity.normalized * Drag() / 250, Color.yellow);
         Debug.DrawRay(COM.position, debugLift / 700, Color.blue);
@@ -80,7 +85,7 @@ public class Aero_SCR : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!dragOnly)
+        if (liftOnly)
         {
             Vector3 lift = Vector3.zero;
             lift = -Vector3.Cross(rb.velocity, transform.forward).normalized * Lift();
@@ -91,15 +96,34 @@ public class Aero_SCR : MonoBehaviour
             rb.AddForceAtPosition(lift / 1000, COM.position);
         }
 
-        Vector3 drag = -rb.velocity.normalized * Drag();
+        if (dragOnly)
+        {
+            Vector3 drag = -rb.velocity.normalized * Drag();
 
-        _drag = drag.magnitude;
+            _drag = drag.magnitude;
 
-        rb.AddForceAtPosition(drag / 1000, COM.position);
+            rb.AddForceAtPosition(drag / 1000, COM.position);
+        }
+        if (!liftOnly && !dragOnly)
+        {
+            Vector3 lift = Vector3.zero;
+            lift = -Vector3.Cross(rb.velocity, transform.forward).normalized * Lift();
+
+            _lift = lift.magnitude;
+            debugLift = lift;
+
+            rb.AddForceAtPosition(lift / 1000, COM.position);
+
+            Vector3 drag = -rb.velocity.normalized * Drag();
+
+            _drag = drag.magnitude;
+
+            rb.AddForceAtPosition(drag / 1000, COM.position);
+        }
 
         if (isControlSurface)
         {
-            Vector3 rot = Vector3.zero;
+            Vector3 rot;
             rot = transform.localEulerAngles;
 
             float currentDeflection;
@@ -107,15 +131,28 @@ public class Aero_SCR : MonoBehaviour
             if (inputVal < 0)
             {
                 currentDeflection = (inputVal * maxTrim) + trimPosition;
-
             }
             else
             {
                 currentDeflection = (-inputVal * minTrim) + trimPosition;
-
             }
 
-            rot.z = currentDeflection;
+            if (rb.velocity.sqrMagnitude > senseFreshHold)
+            {
+                float maxTorqueAtDeflection = rb.velocity.sqrMagnitude * area;
+                float maxAvailibleDeflection = Mathf.Asin(maxTorque / maxTorqueAtDeflection) * Mathf.Rad2Deg;
+
+                if (float.IsNaN(maxAvailibleDeflection) == false)
+                {
+                    float targetAngle = currentDeflection * Mathf.Clamp01(maxAvailibleDeflection);
+                    rot.z = Mathf.MoveTowardsAngle(rot.z, targetAngle, moveSpeed * Time.deltaTime);
+                    Debug.Log(targetAngle + " : " + name);
+                }
+            }
+            else
+            {
+                rot.z = Mathf.MoveTowardsAngle(rot.z, currentDeflection, moveSpeed * Time.deltaTime);
+            }
 
             transform.localEulerAngles = rot;
         }
@@ -219,5 +256,33 @@ public class Aero_SCR : MonoBehaviour
         //Gizmos.DrawSphere(COM.position, 0.2f);
         Handles.Label(COM.position, AOA.ToString());
     }
-#endif
 }
+
+[UnityEditor.CustomEditor(typeof(Aero_SCR))]
+public class CustomEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        DrawDefaultInspector();
+
+        Aero_SCR aero = (Aero_SCR)target;
+
+        if (GUILayout.Button("Flip Direction"))
+        {
+            aero.Mirror();
+        }
+        if (GUILayout.Button("Calculate Paramaters"))
+        {
+            aero.Calculate();
+        }
+        EditorGUILayout.LabelField("Area:", (aero.area.ToString() + " M^2"));
+        EditorGUILayout.LabelField("Flipped:", (aero.mirror.ToString()));
+        EditorGUILayout.LabelField("Lift:", (aero._lift.ToString()));
+        EditorGUILayout.LabelField("Drag:", (aero._drag.ToString()));
+        if (aero.isControlSurface)
+        {
+            EditorGUILayout.LabelField("Deflection:", (aero.transform.localEulerAngles.z.ToString()));
+        }
+    }
+}
+#endif

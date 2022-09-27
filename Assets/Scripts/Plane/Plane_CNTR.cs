@@ -54,11 +54,11 @@ public class Plane_CNTR : MonoBehaviour
             {
                 if (surfacs[i].mirror)
                 {
-                    surfacs[i].inputVal = -rollInput;
+                    surfacs[i].inputVal = rollInput;
                 }
                 else
                 {
-                    surfacs[i].inputVal = rollInput;
+                    surfacs[i].inputVal = -rollInput;
                 }
             }
         }

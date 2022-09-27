@@ -25,7 +25,7 @@ public class Engine_SCR : MonoBehaviour
     }
     void Throttle()
     {
-        pec += 0.1f * input;
+        pec += 0.05f * input;
         pec = Mathf.Clamp(pec, 0, 1);
         float actual = pec * thrust;
         rB.AddForce(transform.right * actual);
